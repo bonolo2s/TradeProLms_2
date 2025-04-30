@@ -25,7 +25,16 @@ const overallStats = {
   highestLossesInRow: 3
 }
 
-const pairStats = {
+// Define an interface for the structure of each pair's stats
+interface PairStat {
+  winRate: number;
+  avgRiskReward: number;
+  avgTradeDuration: string;
+  totalTrades: number;
+}
+
+// Define the pairStats object with string keys and PairStat values
+const pairStats: Record<string, PairStat> = {
   'EUR/USD': { winRate: 70, avgRiskReward: 1.6, avgTradeDuration: '1h 45m', totalTrades: 50 },
   'GBP/JPY': { winRate: 68, avgRiskReward: 1.8, avgTradeDuration: '2h 30m', totalTrades: 35 },
   'AUD/CAD': { winRate: 55, avgRiskReward: 1.2, avgTradeDuration: '1h 30m', totalTrades: 20 }
