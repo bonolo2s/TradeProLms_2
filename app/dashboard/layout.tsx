@@ -5,7 +5,8 @@ import type React from "react"
 import { useState } from "react"
 import { usePathname } from "next/navigation"
 import Link from "next/link"
-import { BookOpen, Calendar, Layout, LineChart, User, Video, Settings } from "lucide-react"
+import { BookOpen, Calendar, Layout, LineChart, User, Video, Settings,LogOut } from "lucide-react"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 
 // Mock function to check if user is admin - replace with actual auth logic
 const isAdmin = () => {
@@ -32,7 +33,21 @@ export default function RootLayout({
     { name: "Availability", icon: Calendar, href: "/dashboard/availability" },
   ]
 
-  const adminItems = [{ name: "Schedule Live Class", icon: Settings, href: "dashboard/admin/schedule-class" }]//i specied to say go to root folder and look for this
+  const adminItems = [{ name: "Schedule Live Class", icon: Settings, href: "/dashboard/admin/schedule-class" }]
+
+  const isAdmin = () => {
+    return true 
+  }
+
+  const userData = {
+    firstName: "Bonolo",
+    lastName: "Lloyd",
+    profileImage: "/placeholder.svg?height=40&width=40",
+  }
+
+  const handleLogout = () => {
+    console.log("Logging out...")
+  }
 
   return (
     <html lang="en">
@@ -77,18 +92,45 @@ export default function RootLayout({
               )}
             </nav>
             <hr />
-            <Link href="/profile" className="flex items-center px-4 py-2 text-gray-700 hover:bg-gray-200">
-              <User className="mr-3" />
-              Profile
-            </Link>
+            <div className="mb-35">
+              <Link href="/dashboard/profile" className="flex items-center px-4 py-2 text-gray-700 hover:bg-gray-200">
+                <User className="mr-3" />
+                Profile
+              </Link>
+              <button
+              onClick={handleLogout}
+                className="w-full flex items-center px-4 py-2 text-gray-700 hover:bg-gray-200 hover:text-red-600"
+              >
+                <LogOut className="mr-3" />
+                Logout
+              </button>
+            </div>
           </aside>
 
           {/* Main Content */}
           <main className="flex-1 overflow-y-auto">
             {/* Header */}
             <header className="bg-white shadow-sm">
-              <div className="max-w-7xl mx-auto py-4 px-4 sm:px-6 lg:px-8">
+              <div className="max-w-7xl mx-auto py-4 px-4 sm:px-6 lg:px-8 flex justify-between items-center">
                 <h1 className="text-2xl font-semibold text-gray-900">{title}</h1>
+                <div className="flex items-center space-x-4">
+                  <div className="text-right mr-2">
+                    <p className="text-sm font-medium">Welcome back,</p>
+                    <p className="text-xs text-gray-500">
+                      {userData.firstName} {userData.lastName}
+                    </p>
+                  </div>
+                  <Avatar>
+                    <AvatarImage
+                      src={userData.profileImage || "/placeholder.svg"}
+                      alt={`${userData.firstName} ${userData.lastName}`}
+                    />
+                    <AvatarFallback>
+                      {userData.firstName[0]}
+                      {userData.lastName[0]}
+                    </AvatarFallback>
+                  </Avatar>
+                </div>
               </div>
             </header>
 
