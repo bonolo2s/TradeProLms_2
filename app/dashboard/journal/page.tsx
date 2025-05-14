@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
-import { PlusCircle, X, Eye } from "lucide-react"
+import { PlusCircle, X, Eye ,ListChecks } from "lucide-react"
 import {
   BarChart,
   Bar,
@@ -131,10 +131,8 @@ const completedTrades = [
 export default function JournalPage() {
   const [selectedPair, setSelectedPair] = useState("EUR/USD")
   const [tradingSetup, setTradingSetup] = useState({
-    entryCriteria: [""],
-    confluences: [""],
-    tradingModels: [""],
-    tradingPairs: [""],
+    tradingModelName: [""],
+    entryCriteriaOrConfluence: [""]
   })
   const [dailySetup, setDailySetup] = useState({
     date: "",
@@ -144,6 +142,7 @@ export default function JournalPage() {
     result: "",
     confluences: [""],
     notes: "",
+    tradeManagementRules: [""],
   })
   const [selectedTrade, setSelectedTrade] = useState<(typeof completedTrades)[0] | null>(null)
 
@@ -201,6 +200,27 @@ export default function JournalPage() {
     }))
   }
 
+  const addManagementRule = () => {
+    setDailySetup((prev) => ({
+      ...prev,
+      tradeManagementRules: [...prev.tradeManagementRules, ""],
+    }))
+  }
+
+  const removeManagementRule = (index: number) => {
+    setDailySetup((prev) => ({
+      ...prev,
+      tradeManagementRules: prev.tradeManagementRules.filter((_, i) => i !== index),
+    }))
+  }
+
+  const updateManagementRule = (index: number, value: string) => {
+    setDailySetup((prev) => ({
+      ...prev,
+      tradeManagementRules: prev.tradeManagementRules.map((item, i) => (i === index ? value : item)),
+    }))
+  }
+
   const onDrop = (acceptedFiles: File[], type: "beforeImage" | "afterImage") => {
     if (acceptedFiles.length > 0) {
       setDailySetup((prev) => ({ ...prev, [type]: acceptedFiles[0] }))
@@ -230,8 +250,8 @@ export default function JournalPage() {
         <TabsList>
           <TabsTrigger value="overall">Overall Stats</TabsTrigger>
           <TabsTrigger value="pairStats">Pair Stats</TabsTrigger>
-          <TabsTrigger value="models">Models & Criteria</TabsTrigger>
-          <TabsTrigger value="tradingSetup">Trading Setup</TabsTrigger>
+          <TabsTrigger value="models">Models & Criteria stats</TabsTrigger>
+          <TabsTrigger value="tradingSetup">Definining Models</TabsTrigger>
           <TabsTrigger value="dailySetups">Daily Setups</TabsTrigger>
         </TabsList>
 
@@ -423,7 +443,7 @@ export default function JournalPage() {
                             ))}
                           </div>
                         </TableCell>
-                        <TableCell>
+                        <TableCell> {/*Lol the dialog or modal can be internal*/}
                           <Dialog>
                             <DialogTrigger asChild>
                               <Button variant="outline" size="sm" onClick={() => setSelectedTrade(trade)}>
@@ -614,6 +634,64 @@ export default function JournalPage() {
               </form>
             </CardContent>
           </Card>
+
+          {/* Display Saved Strategies */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Saved Strategies</CardTitle>
+              <CardDescription>Your defined trading strategies</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {/* Mock saved strategies - replace with actual data from backend */}
+              <div className="space-y-4" style={{overflowY: "scroll", maxHeight: "300px"}}>
+                <div className="border rounded-lg p-4">
+                  <h3 className="text-lg font-medium mb-2">Trend Following Model</h3>
+                  <div className="space-y-2">
+                    <div>
+                      <h4 className="text-sm font-medium text-gray-500">Entry Criteria/Confluence</h4>
+                      <ul className="list-disc pl-5 mt-1">
+                        <li>Higher highs and higher lows on multiple timeframes</li>
+                        <li>Price above 200 EMA</li>
+                        <li>RSI above 50</li>
+                        <li>Volume increasing on breakouts</li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="border rounded-lg p-4">
+                  <h3 className="text-lg font-medium mb-2">Breakout Model</h3>
+                  <div className="space-y-2">
+                    <div>
+                      <h4 className="text-sm font-medium text-gray-500">Entry Criteria/Confluence</h4>
+                      <ul className="list-disc pl-5 mt-1">
+                        <li>Price breaking out of consolidation pattern</li>
+                        <li>Increased volume on breakout</li>
+                        <li>Previous resistance/support level broken</li>
+                        <li>Confirmation candle pattern</li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="border rounded-lg p-4">
+                  <h3 className="text-lg font-medium mb-2">Mean Reversion Model</h3>
+                  <div className="space-y-2">
+                    <div>
+                      <h4 className="text-sm font-medium text-gray-500">Entry Criteria/Confluence</h4>
+                      <ul className="list-disc pl-5 mt-1">
+                        <li>Oversold/overbought RSI conditions</li>
+                        <li>Price at major support/resistance level</li>
+                        <li>Divergence between price and oscillator</li>
+                        <li>Candlestick reversal pattern</li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
         </TabsContent>
 
         <TabsContent value="dailySetups" className="space-y-4">
@@ -683,7 +761,7 @@ export default function JournalPage() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-lg font-semibold">Confluences</Label>
+                  <Label className="text-lg font-semibold">Confluences/ Model used</Label>
                   {dailySetup.confluences.map((confluence, index) => (
                     <div key={index} className="flex items-center space-x-2">
                       <Input
@@ -709,6 +787,39 @@ export default function JournalPage() {
                     onChange={(e) => setDailySetup((prev) => ({ ...prev, notes: e.target.value }))}
                     placeholder="Any additional notes about the trade"
                   />
+                </div>
+                  {/* Trade Management Rules Section */}
+                  <div className="space-y-2">
+                  <div className="flex items-center space-x-2">
+                    <ListChecks className="h-5 w-5 text-gray-700" />
+                    <Label className="text-lg font-semibold">Trade Management Rules Followed</Label>
+                  </div>
+                  <div className="bg-gray-50 rounded-md p-4">
+                    {dailySetup.tradeManagementRules.map((rule, index) => (
+                      <div key={index} className="flex items-start space-x-2 mb-2">
+                        <div className="mt-2.5 h-2 w-2 rounded-full bg-gray-700 flex-shrink-0" />
+                        <Input
+                          value={rule}
+                          onChange={(e) => updateManagementRule(index, e.target.value)}
+                          placeholder="Enter management rule you followed"
+                          className="flex-grow"
+                        />
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="icon"
+                          onClick={() => removeManagementRule(index)}
+                          className="flex-shrink-0"
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ))}
+                    <Button type="button" variant="outline" size="sm" onClick={addManagementRule} className="mt-2">
+                      <PlusCircle className="h-4 w-4 mr-2" />
+                      Add Management Rule
+                    </Button>
+                  </div>
                 </div>
                 <Button type="submit">Save Daily Setup</Button>
               </form>
