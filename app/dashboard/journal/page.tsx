@@ -1,6 +1,8 @@
-'use client'
+"use client"
 
-import { useState, useCallback } from 'react'
+import type React from "react"
+
+import { useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -9,20 +11,34 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
-import { PlusCircle, X, Upload } from 'lucide-react'
-import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { useDropzone } from 'react-dropzone'
+import { PlusCircle, X, Eye } from "lucide-react"
+import {
+  BarChart,
+  Bar,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+} from "recharts"
+import { useDropzone } from "react-dropzone"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { Badge } from "@/components/ui/badge"
 
+// Mock data - replace with actual data fetching in a real application
 const overallStats = {
   winRate: 65,
   avgRiskReward: 1.5,
-  avgTradeDuration: '2h 15m',
-  mostProfitableSession: 'London',
-  leastProfitableSession: 'Sydney',
-  mostTradedPair: 'EUR/USD',
-  mostProfitablePair: 'GBP/JPY',
-  leastProfitablePair: 'AUD/CAD',
-  highestLossesInRow: 3
+  avgTradeDuration: "2h 15m",
+  mostProfitableSession: "London",
+  leastProfitableSession: "Sydney",
+  mostTradedPair: "EUR/USD",
+  mostProfitablePair: "GBP/JPY",
+  leastProfitablePair: "AUD/CAD",
+  highestLossesInRow: 3,
 }
 
 // Define an interface for the structure of each pair's stats
@@ -42,96 +58,169 @@ const pairStats: Record<string, PairStat> = {
 
 // Define a type for the keys of pairStats
 type PairKeys = keyof typeof pairStats;
+// Mock data for completed trades
+const completedTrades = [
+  {
+    id: 1,
+    pair: "EUR/USD",
+    date: "2025-01-10",
+    result: "Win",
+    pips: 45,
+    model: "Trend Following",
+    beforeImage: "/placeholder.svg?height=300&width=500",
+    afterImage: "/placeholder.svg?height=300&width=500",
+    confluences: ["Support level", "RSI divergence", "Moving average crossover"],
+  },
+  {
+    id: 2,
+    pair: "EUR/USD",
+    date: "2025-01-08",
+    result: "Loss",
+    pips: -20,
+    model: "Breakout",
+    beforeImage: "/placeholder.svg?height=300&width=500",
+    afterImage: "/placeholder.svg?height=300&width=500",
+    confluences: ["Resistance breakout", "Volume increase"],
+  },
+  {
+    id: 3,
+    pair: "EUR/USD",
+    date: "2025-01-05",
+    result: "Win",
+    pips: 30,
+    model: "Mean Reversion",
+    beforeImage: "/placeholder.svg?height=300&width=500",
+    afterImage: "/placeholder.svg?height=300&width=500",
+    confluences: ["Oversold RSI", "Price at support zone", "Bullish engulfing pattern"],
+  },
+  {
+    id: 4,
+    pair: "GBP/JPY",
+    date: "2025-01-12",
+    result: "Win",
+    pips: 60,
+    model: "Trend Following",
+    beforeImage: "/placeholder.svg?height=300&width=500",
+    afterImage: "/placeholder.svg?height=300&width=500",
+    confluences: ["Uptrend continuation", "Higher highs and higher lows", "Strong momentum"],
+  },
+  {
+    id: 5,
+    pair: "GBP/JPY",
+    date: "2025-01-07",
+    result: "Win",
+    pips: 35,
+    model: "Breakout",
+    beforeImage: "/placeholder.svg?height=300&width=500",
+    afterImage: "/placeholder.svg?height=300&width=500",
+    confluences: ["Triangle pattern breakout", "Increased volatility"],
+  },
+  {
+    id: 6,
+    pair: "AUD/CAD",
+    date: "2025-01-11",
+    result: "Loss",
+    pips: -25,
+    model: "Mean Reversion",
+    beforeImage: "/placeholder.svg?height=300&width=500",
+    afterImage: "/placeholder.svg?height=300&width=500",
+    confluences: ["Overbought RSI", "Price at resistance zone"],
+  },
+]
 
 export default function JournalPage() {
-  const [selectedPair, setSelectedPair] = useState<PairKeys>('EUR/USD') //ill see this
+  const [selectedPair, setSelectedPair] = useState("EUR/USD")
   const [tradingSetup, setTradingSetup] = useState({
-    entryCriteria: [''],
-    confluences: [''],
-    tradingModels: [''],
-    tradingPairs: ['']
+    entryCriteria: [""],
+    confluences: [""],
+    tradingModels: [""],
+    tradingPairs: [""],
   })
   const [dailySetup, setDailySetup] = useState({
-    date: '',
-    pair: '',
+    date: "",
+    pair: "",
     beforeImage: null as File | null,
     afterImage: null as File | null,
-    result: '',
-    confluences: [''],
-    notes: ''
+    result: "",
+    confluences: [""],
+    notes: "",
   })
+  const [selectedTrade, setSelectedTrade] = useState<(typeof completedTrades)[0] | null>(null)
 
   const addField = (field: keyof typeof tradingSetup) => {
-    setTradingSetup(prev => ({
+    setTradingSetup((prev) => ({
       ...prev,
-      [field]: [...prev[field], '']
+      [field]: [...prev[field], ""],
     }))
   }
 
   const removeField = (field: keyof typeof tradingSetup, index: number) => {
-    setTradingSetup(prev => ({
+    setTradingSetup((prev) => ({
       ...prev,
-      [field]: prev[field].filter((_, i) => i !== index)
+      [field]: prev[field].filter((_, i) => i !== index),
     }))
   }
 
   const updateField = (field: keyof typeof tradingSetup, index: number, value: string) => {
-    setTradingSetup(prev => ({
+    setTradingSetup((prev) => ({
       ...prev,
-      [field]: prev[field].map((item, i) => i === index ? value : item)
+      [field]: prev[field].map((item, i) => (i === index ? value : item)),
     }))
   }
 
   const handleTradingSetupSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    console.log('Trading setup submitted:', tradingSetup)
+    console.log("Trading setup submitted:", tradingSetup)
     // Here you would typically send this data to your backend
   }
 
   const handleDailySetupSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    console.log('Daily setup submitted:', dailySetup)
+    console.log("Daily setup submitted:", dailySetup)
     // Here you would typically send this data to your backend
   }
 
   const addConfluence = () => {
-    setDailySetup(prev => ({
+    setDailySetup((prev) => ({
       ...prev,
-      confluences: [...prev.confluences, '']
+      confluences: [...prev.confluences, ""],
     }))
   }
 
   const removeConfluence = (index: number) => {
-    setDailySetup(prev => ({
+    setDailySetup((prev) => ({
       ...prev,
-      confluences: prev.confluences.filter((_, i) => i !== index)
+      confluences: prev.confluences.filter((_, i) => i !== index),
     }))
   }
 
   const updateConfluence = (index: number, value: string) => {
-    setDailySetup(prev => ({
+    setDailySetup((prev) => ({
       ...prev,
-      confluences: prev.confluences.map((item, i) => i === index ? value : item)
+      confluences: prev.confluences.map((item, i) => (i === index ? value : item)),
     }))
   }
 
-  const onDrop = useCallback((acceptedFiles: File[], type: 'beforeImage' | 'afterImage') => {
+  const onDrop = (acceptedFiles: File[], type: "beforeImage" | "afterImage") => {
     if (acceptedFiles.length > 0) {
-      setDailySetup(prev => ({ ...prev, [type]: acceptedFiles[0] }))
+      setDailySetup((prev) => ({ ...prev, [type]: acceptedFiles[0] }))
     }
-  }, [])
+  }
 
   const { getRootProps: getBeforeImageRootProps, getInputProps: getBeforeImageInputProps } = useDropzone({
-    onDrop: (acceptedFiles) => onDrop(acceptedFiles, 'beforeImage'),
-    accept: { 'image/*': [] },
-    multiple: false
+    onDrop: (acceptedFiles) => onDrop(acceptedFiles, "beforeImage"),
+    accept: { "image/*": [] },
+    multiple: false,
   })
 
   const { getRootProps: getAfterImageRootProps, getInputProps: getAfterImageInputProps } = useDropzone({
-    onDrop: (acceptedFiles) => onDrop(acceptedFiles, 'afterImage'),
-    accept: { 'image/*': [] },
-    multiple: false
+    onDrop: (acceptedFiles) => onDrop(acceptedFiles, "afterImage"),
+    accept: { "image/*": [] },
+    multiple: false,
   })
+
+  // Filter trades by selected pair
+  const filteredTrades = completedTrades.filter((trade) => trade.pair === selectedPair)
 
   return (
     <div className="p-6 space-y-6">
@@ -180,12 +269,14 @@ export default function JournalPage() {
             </CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={[ 
-                  { name: 'London', value: 100 }, 
-                  { name: 'New York', value: 80 }, 
-                  { name: 'Tokyo', value: 60 }, 
-                  { name: 'Sydney', value: 40 }, 
-                ]}>
+                <BarChart
+                  data={[
+                    { name: "London", value: 100 },
+                    { name: "New York", value: 80 },
+                    { name: "Tokyo", value: 60 },
+                    { name: "Sydney", value: 40 },
+                  ]}
+                >
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="name" />
                   <YAxis />
@@ -214,7 +305,7 @@ export default function JournalPage() {
                   {Object.entries(pairStats).map(([pair, stats]) => (
                     <TableRow key={pair}>
                       <TableCell>{pair}</TableCell>
-                      <TableCell>{(stats.winRate * stats.avgRiskReward / 100).toFixed(2)}</TableCell>
+                      <TableCell>{((stats.winRate * stats.avgRiskReward) / 100).toFixed(2)}</TableCell>
                       <TableCell>{stats.totalTrades}</TableCell>
                     </TableRow>
                   ))}
@@ -231,7 +322,9 @@ export default function JournalPage() {
             </SelectTrigger>
             <SelectContent>
               {Object.keys(pairStats).map((pair) => (
-                <SelectItem key={pair} value={pair}>{pair}</SelectItem>
+                <SelectItem key={pair} value={pair}>
+                  {pair}
+                </SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -269,13 +362,15 @@ export default function JournalPage() {
             </CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={300}>
-                <LineChart data={[ 
-                  { date: '2023-01', pips: 50 }, 
-                  { date: '2023-02', pips: 80 }, 
-                  { date: '2023-03', pips: 60 }, 
-                  { date: '2023-04', pips: 100 }, 
-                  { date: '2023-05', pips: 85 }, 
-                ]}>
+                <LineChart
+                  data={[
+                    { date: "2023-01", pips: 50 },
+                    { date: "2023-02", pips: 80 },
+                    { date: "2023-03", pips: 60 },
+                    { date: "2023-04", pips: 100 },
+                    { date: "2023-05", pips: 85 },
+                  ]}
+                >
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="date" />
                   <YAxis />
@@ -284,6 +379,130 @@ export default function JournalPage() {
                   <Line type="monotone" dataKey="pips" stroke="#8884d8" />
                 </LineChart>
               </ResponsiveContainer>
+            </CardContent>
+          </Card>
+
+          {/* Completed Trades Table */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Completed Trades for {selectedPair}</CardTitle>
+              <CardDescription>History of all completed trades for this pair</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {filteredTrades.length > 0 ? (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Date</TableHead>
+                      <TableHead>Result</TableHead>
+                      <TableHead>Pips</TableHead>
+                      <TableHead>Model</TableHead>
+                      <TableHead>Confluences</TableHead>
+                      <TableHead>Images</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredTrades.map((trade) => (
+                      <TableRow key={trade.id}>
+                        <TableCell>{new Date(trade.date).toLocaleDateString()}</TableCell>
+                        <TableCell>
+                          <Badge className={trade.result === "Win" ? "bg-green-500" : "bg-red-500"}>
+                            {trade.result}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className={trade.pips > 0 ? "text-green-600" : "text-red-600"}>
+                          {trade.pips > 0 ? `+${trade.pips}` : trade.pips}
+                        </TableCell>
+                        <TableCell>{trade.model}</TableCell>
+                        <TableCell>
+                          <div className="flex flex-wrap gap-1">
+                            {trade.confluences.map((confluence, index) => (
+                              <Badge key={index} variant="outline" className="text-xs">
+                                {confluence}
+                              </Badge>
+                            ))}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Dialog>
+                            <DialogTrigger asChild>
+                              <Button variant="outline" size="sm" onClick={() => setSelectedTrade(trade)}>
+                                <Eye className="h-4 w-4 mr-1" /> View
+                              </Button>
+                            </DialogTrigger>
+                            <DialogContent className="max-w-4xl">
+                              <DialogHeader>
+                                <DialogTitle>
+                                  Trade Details - {trade.pair} on {new Date(trade.date).toLocaleDateString()}
+                                </DialogTitle>
+                              </DialogHeader>
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                                <div>
+                                  <h3 className="font-medium mb-2">Before Trade</h3>
+                                  <img
+                                    src={trade.beforeImage || "/placeholder.svg"}
+                                    alt="Before trade"
+                                    className="w-full rounded-md border"
+                                  />
+                                </div>
+                                <div>
+                                  <h3 className="font-medium mb-2">After Trade</h3>
+                                  <img
+                                    src={trade.afterImage || "/placeholder.svg"}
+                                    alt="After trade"
+                                    className="w-full rounded-md border"
+                                  />
+                                </div>
+                              </div>
+                              <div className="mt-4">
+                                <h3 className="font-medium mb-2">Trade Information</h3>
+                                <div className="grid grid-cols-2 gap-2">
+                                  <div>
+                                    <p className="text-sm text-gray-500">Result</p>
+                                    <p
+                                      className={
+                                        trade.result === "Win"
+                                          ? "text-green-600 font-medium"
+                                          : "text-red-600 font-medium"
+                                      }
+                                    >
+                                      {trade.result}
+                                    </p>
+                                  </div>
+                                  <div>
+                                    <p className="text-sm text-gray-500">Pips</p>
+                                    <p
+                                      className={
+                                        trade.pips > 0 ? "text-green-600 font-medium" : "text-red-600 font-medium"
+                                      }
+                                    >
+                                      {trade.pips > 0 ? `+${trade.pips}` : trade.pips}
+                                    </p>
+                                  </div>
+                                  <div>
+                                    <p className="text-sm text-gray-500">Model</p>
+                                    <p>{trade.model}</p>
+                                  </div>
+                                </div>
+                              </div>
+                              <div className="mt-4">
+                                <h3 className="font-medium mb-2">Confluences</h3>
+                                <ul className="list-disc pl-5 space-y-1">
+                                  {trade.confluences.map((confluence, index) => (
+                                    <li key={index}>{confluence}</li>
+                                  ))}
+                                </ul>
+                              </div>
+                            </DialogContent>
+                          </Dialog>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              ) : (
+                <div className="text-center py-8 text-gray-500">No completed trades found for {selectedPair}</div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -362,34 +581,32 @@ export default function JournalPage() {
               <form onSubmit={handleTradingSetupSubmit} className="space-y-6">
                 {(Object.keys(tradingSetup) as Array<keyof typeof tradingSetup>).map((field) => (
                   <div key={field} className="space-y-2">
-                    <Label htmlFor={field} className="text-lg font-semibold capitalize">{field.replace(/([A-Z])/g, ' $1').trim()}</Label>
+                    <Label htmlFor={field} className="text-lg font-semibold capitalize">
+                      {field.replace(/([A-Z])/g, " $1").trim()}
+                    </Label>
                     {tradingSetup[field].map((item, index) => (
                       <div key={index} className="flex items-center space-x-2">
                         <Input
                           id={`${field}-${index}`}
                           value={item}
                           onChange={(e) => updateField(field, index, e.target.value)}
-                          placeholder={`Enter ${field.replace(/([A-Z])/g, ' $1').trim().toLowerCase()}`}
+                          placeholder={`Enter ${field
+                            .replace(/([A-Z])/g, " $1")
+                            .trim()
+                            .toLowerCase()}`}
                         />
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="icon"
-                          onClick={() => removeField(field, index)}
-                        >
+                        <Button type="button" variant="outline" size="icon" onClick={() => removeField(field, index)}>
                           <X className="h-4 w-4" />
                         </Button>
                       </div>
                     ))}
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => addField(field)}
-                      className="mt-2"
-                    >
+                    <Button type="button" variant="outline" size="sm" onClick={() => addField(field)} className="mt-2">
                       <PlusCircle className="h-4 w-4 mr-2" />
-                      Add {field.replace(/([A-Z])/g, ' $1').trim().toLowerCase()}
+                      Add{" "}
+                      {field
+                        .replace(/([A-Z])/g, " $1")
+                        .trim()
+                        .toLowerCase()}
                     </Button>
                   </div>
                 ))}
@@ -413,7 +630,7 @@ export default function JournalPage() {
                     id="date"
                     type="date"
                     value={dailySetup.date}
-                    onChange={(e) => setDailySetup(prev => ({ ...prev, date: e.target.value }))}
+                    onChange={(e) => setDailySetup((prev) => ({ ...prev, date: e.target.value }))}
                     required
                   />
                 </div>
@@ -422,7 +639,7 @@ export default function JournalPage() {
                   <Input
                     id="pair"
                     value={dailySetup.pair}
-                    onChange={(e) => setDailySetup(prev => ({ ...prev, pair: e.target.value }))}
+                    onChange={(e) => setDailySetup((prev) => ({ ...prev, pair: e.target.value }))}
                     placeholder="e.g., EUR/USD"
                     required
                   />
@@ -460,7 +677,7 @@ export default function JournalPage() {
                   <Input
                     id="result"
                     value={dailySetup.result}
-                    onChange={(e) => setDailySetup(prev => ({ ...prev, result: e.target.value }))}
+                    onChange={(e) => setDailySetup((prev) => ({ ...prev, result: e.target.value }))}
                     placeholder="e.g., +50 pips, -20 pips"
                     required
                   />
@@ -474,23 +691,12 @@ export default function JournalPage() {
                         onChange={(e) => updateConfluence(index, e.target.value)}
                         placeholder="Enter confluence"
                       />
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="icon"
-                        onClick={() => removeConfluence(index)}
-                      >
+                      <Button type="button" variant="outline" size="icon" onClick={() => removeConfluence(index)}>
                         <X className="h-4 w-4" />
                       </Button>
                     </div>
                   ))}
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={addConfluence}
-                    className="mt-2"
-                  >
+                  <Button type="button" variant="outline" size="sm" onClick={addConfluence} className="mt-2">
                     <PlusCircle className="h-4 w-4 mr-2" />
                     Add Confluence
                   </Button>
@@ -500,7 +706,7 @@ export default function JournalPage() {
                   <Textarea
                     id="notes"
                     value={dailySetup.notes}
-                    onChange={(e) => setDailySetup(prev => ({ ...prev, notes: e.target.value }))}
+                    onChange={(e) => setDailySetup((prev) => ({ ...prev, notes: e.target.value }))}
                     placeholder="Any additional notes about the trade"
                   />
                 </div>
